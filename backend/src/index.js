@@ -6,6 +6,7 @@ const { sequelize } = require('./config/db');
 const authRoutes = require('./routes/auth');
 const txRoutes = require('./routes/transactions');
 const analyticsRoutes = require('./routes/analytics');
+const webhookRoutes = require('./routes/webhook');
 
 const app = express();
 app.use(cors());
@@ -14,6 +15,7 @@ app.use(bodyParser.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/transactions', txRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/webhook', webhookRoutes);
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
