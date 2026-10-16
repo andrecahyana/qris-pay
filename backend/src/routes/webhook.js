@@ -7,20 +7,23 @@ const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || 'webhook_secret';
 const SIG_HEADER = 'x-qris-signature';
 
 // Simulated QRIS webhook receiver (illustration only)
-// Expects JSON payload and a header 'x-qris-signature' = HMAC_SHA256(JSON(payload), WEBHOOK_SECRET)
+// Expects JSON payload and a header 'x-qris-signature' = HMAC_SHA256(rawBody, WEBHOOK_SECRET) in hex
 router.post('/notify', async (req, res) => {
   try {
-    const payload = req.body;
+    const payload = req.body || {};
     const signature = (req.headers[SIG_HEADER] || '').toString();
 
     if (!signature) {
       return res.status(400).json({ error: 'Missing signature header' });
     }
 
-    const computed = crypto.createHmac('sha256', WEBHOOK_SECRET).update(JSON.stringify(payload)).digest('hex');
+    // Use the raw body captured by express.json verify to compute HMAC
+    const raw = req.rawBody || Buffer.from(JSON.stringify(payload));
+    const computed = crypto.createHmac('sha256', WEBHOOK_SECRET).update(raw).digest('hex');
 
-    const sigBuf = Buffer.from(signature, 'utf8');
-    const compBuf = Buffer.from(computed, 'utf8');
+    // Compare in constant time using buffers
+    const sigBuf = Buffer.from(signature, 'hex');
+    const compBuf = Buffer.from(computed, 'hex');
     if (sigBuf.length !== compBuf.length || !crypto.timingSafeEqual(sigBuf, compBuf)) {
       console.warn('Invalid webhook signature', { received: signature, computed });
       return res.status(400).json({ error: 'Invalid signature' });
