@@ -1,10 +1,37 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+import { useEffect, useRef } from 'react';
+import ChartJS from 'chart.js/auto';
 
-html, body, #__next {
-  height: 100%;
-}
-body {
-  background-color: #f8fafc; /* gray-50 */
+export default function Chart({ data = [] }) {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    const ctx = canvasRef.current.getContext('2d');
+    if (!ctx) return;
+
+    const chart = new ChartJS(ctx, {
+      type: 'line',
+      data: {
+        labels: data.map((item) => item.day || '-'),
+        datasets: [{
+          label: 'Transaction Amount',
+          data: data.map((item) => Number(item.total_amount || 0)),
+          borderColor: '#2563eb',
+          backgroundColor: 'rgba(37,99,235,0.15)',
+          fill: true,
+          tension: 0.25,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true } }
+      }
+    });
+
+    return () => chart.destroy();
+  }, [data]);
+
+  return <div className="h-72"><canvas ref={canvasRef} /></div>;
 }
